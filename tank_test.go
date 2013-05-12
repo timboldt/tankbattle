@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	East  = 0.0
-	West  = 180.0
-	North = -90.0
-	South = 90.0
+	East        = 0.0
+	West        = 180.0
+	North       = 270.0
+	South       = 90.0
 	Triangle345 = 36.86 // A 3-4-5 triangle has this angle between the "4" and "5" sides
 )
 
@@ -21,6 +21,12 @@ func checkLocation(t *testing.T, locationName string, actual, expected Vector2D)
 	}
 	if math.Abs(actual.Y-expected.Y) > 0.1 {
 		t.Errorf("%v: Y value was %v, expected %v", locationName, actual.Y, expected.Y)
+	}
+}
+
+func checkFloat(t *testing.T, locationName string, actual, expected float64) {
+	if math.Abs(actual-expected) > 0.1 {
+		t.Errorf("%v: actual %v, expected %v", locationName, actual, expected)
 	}
 }
 
@@ -40,89 +46,54 @@ func TestSimpleForwardBackward(t *testing.T) {
 func TestDriveAtAngle(t *testing.T) {
 	tank := Tank{Vector2D{0.0, 0.0}, Triangle345, North, MovingForward, NotTurning, NotTurning}
 	tank.OnTimePasses(5.0)
-	checkLocation(t, "After moving forwards", tank.Location(), Vector2D{4.0*SpeedMax, 3.0*SpeedMax})
+	checkLocation(t, "After moving forwards", tank.Location(), Vector2D{4.0 * SpeedMax, 3.0 * SpeedMax})
+}
+
+func TestDriveInASquarePattern(t *testing.T) {
+	tank := Tank{Vector2D{0.0, 0.0}, East, East, NotMoving, NotTurning, NotTurning}
+
+	tank.StartDrivingForwards()
+	tank.OnTimePasses(1.0)
+	tank.StopDriving()
+	checkLocation(t, "After travelling east", tank.Location(), Vector2D{SpeedMax, 0.0})
+
+	tank.StartTurningRight()
+	tank.OnTimePasses(90.0 / BodyRotationRateMax)
+	tank.StopTurning()
+
+	tank.StartDrivingForwards()
+	tank.OnTimePasses(1.0)
+	tank.StopDriving()
+	checkLocation(t, "After travelling south", tank.Location(), Vector2D{SpeedMax, SpeedMax})
+
+	tank.StartTurningRight()
+	tank.OnTimePasses(90.0 / BodyRotationRateMax)
+	tank.StopTurning()
+
+	tank.StartDrivingForwards()
+	tank.OnTimePasses(1.0)
+	tank.StopDriving()
+	checkLocation(t, "After travelling west", tank.Location(), Vector2D{0.0, SpeedMax})
+
+	tank.StartTurningRight()
+	tank.OnTimePasses(90.0 / BodyRotationRateMax)
+	tank.StopTurning()
+
+	tank.StartDrivingForwards()
+	tank.OnTimePasses(1.0)
+	tank.StopDriving()
+	checkLocation(t, "After travelling north", tank.Location(), Vector2D{0.0, 0.0})
+}
+
+func TestDriveInACircle(t *testing.T) {
+	tank := Tank{Vector2D{1.0, 0.0}, South, South, MovingForward, TurningRight, NotTurning}
+	tank.OnTimePasses(180.0 / BodyRotationRateWhileDriving)
+	checkFloat(t, "Angle after travelling 180 degrees", tank.BodyAngle(), North)
+	tank.OnTimePasses(180.0 / BodyRotationRateWhileDriving)
+	checkLocation(t, "After travelling 360 degrees", tank.Location(), Vector2D{1.0, 0.0})
 }
 
 /*
-TEST(DrivingTest, StartStop) {
-  Tank t(0.0, 0.0, kEast, 0.0);
-  EXPECT_PRED2(HasSpeed, t, 0.0);
-
-  t.startDrivingForwards();
-  EXPECT_PRED2(HasSpeed, t, kSpeedMax);
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(HasSpeed, t, kSpeedMax);
-
-  t.stopDriving();
-  EXPECT_PRED2(HasSpeed, t, 0.0);
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(HasSpeed, t, 0.0);
-
-  t.startDrivingBackwards();
-  EXPECT_PRED2(HasSpeed, t, -1.0 * kSpeedMax);
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(HasSpeed, t, -1.0 * kSpeedMax);
-}
-
-TEST(DrivingTest, DriveForward) { 
-  {
-    Tank t(0.0, 0.0, kEast, 0.0);
-
-    t.startDrivingForwards();
-    t.onTimePasses(1.0);
-    EXPECT_PRED2(IsNearLocation, t, Vector(kSpeedMax, 0));
-  }
-
-  {
-    Tank t(0.0, 0.0, kWest, 0.0);
-
-    t.startDrivingForwards();
-    t.onTimePasses(1.0);
-    EXPECT_PRED2(IsNearLocation, t, Vector(-1.0 * kSpeedMax, 0));
-  }
-
-  {
-    Tank t(0.0, 0.0, kNorth, 0.0);
-
-    t.startDrivingForwards();
-    t.onTimePasses(1.0);
-    EXPECT_PRED2(IsNearLocation, t, Vector(0, -1.0 * kSpeedMax));
-  }
-
-  {
-    Tank t(0.0, 0.0, kSouth, 0.0);
-
-    t.startDrivingForwards();
-    t.onTimePasses(1.0);
-    EXPECT_PRED2(IsNearLocation, t, Vector(0, kSpeedMax));
-  }
-
-  {
-    // 3-4-5 triangle = 36.86 degrees
-    Tank t(0.0, 0.0, 36.86, 0.0);
-
-    t.startDrivingForwards();
-    t.onTimePasses(5.0);
-    EXPECT_PRED2(IsNearLocation, t, Vector(4.0 * kSpeedMax, 3.0 * kSpeedMax));
-  }
-}
-
-TEST(DrivingTest, SimpleForwardBackwards) { 
-  Tank t(0.0, 0.0, kSouth, 0.0);
-
-  t.startDrivingForwards();
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(IsNearLocation, t, Vector(0.0, 1.0 * kSpeedMax));
-
-  t.stopDriving();
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(IsNearLocation, t, Vector(0.0, 1.0 * kSpeedMax));
-
-  // Assumes tank speed is the same forward and backwards
-  t.startDrivingBackwards();
-  t.onTimePasses(1.0);
-  EXPECT_PRED2(IsNearLocation, t, Vector(0.0, 0.0));
-}
 
 TEST(DrivingTest, SquarePattern) { 
   Tank t(0.0, 0.0, kEast, 0.0);

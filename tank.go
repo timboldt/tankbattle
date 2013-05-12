@@ -2,7 +2,9 @@
 
 package tankbattle
 
-import ( "math" )
+import (
+	"math"
+)
 
 //
 // Stuff that could be generalized
@@ -44,13 +46,13 @@ const (
 )
 
 type Tank struct {
-	location        Vector2D
-	bodyAngle	float64
-	turretAngle	float64
+	location    Vector2D
+	bodyAngle   float64
+	turretAngle float64
 
-	motion MotionDirection
-	bodyRotation RotationDirection
-	turretRotation RotationDirection
+	motion        MotionDirection
+	bodyTurning   RotationDirection
+	turretTurning RotationDirection
 }
 
 func (tank *Tank) StartDrivingForwards() {
@@ -65,18 +67,62 @@ func (tank *Tank) StopDriving() {
 	tank.motion = NotMoving
 }
 
+func (tank *Tank) StartTurningLeft() {
+	tank.bodyTurning = TurningLeft
+}
+
+func (tank *Tank) StartTurningRight() {
+	tank.bodyTurning = TurningRight
+}
+
+func (tank *Tank) StopTurning() {
+	tank.bodyTurning = NotTurning
+}
+
 func (tank *Tank) OnTimePasses(elapsedTime float64) {
-	var speed float64
-	switch tank.motion {
+	for elapsedTime > 0.0 {
+		time := math.Min(0.1, elapsedTime)
+		elapsedTime -= time
+
+		var speed float64
+		switch tank.motion {
 		case NotMoving:
 			speed = 0
 		case MovingBackward:
-			speed = -SpeedMax
+			if tank.bodyTurning == NotTurning {
+				speed = -SpeedMax
+			} else {
+				speed = -SpeedWhileRotating
+			}
 		case MovingForward:
-			speed = SpeedMax
+			if tank.bodyTurning == NotTurning {
+				speed = SpeedMax
+			} else {
+				speed = SpeedWhileRotating
+			}
+		}
+		tank.location.X += time * speed * math.Cos(tank.bodyAngle*math.Pi/180)
+		tank.location.Y += time * speed * math.Sin(tank.bodyAngle*math.Pi/180)
+
+		var turn float64
+		switch tank.bodyTurning {
+		case NotTurning:
+			turn = 0
+		case TurningLeft:
+			if tank.motion == NotMoving {
+				turn = -BodyRotationRateMax
+			} else {
+				turn = -BodyRotationRateWhileDriving
+			}
+		case TurningRight:
+			if tank.motion == NotMoving {
+				turn = BodyRotationRateMax
+			} else {
+				turn = BodyRotationRateWhileDriving
+			}
+		}
+		tank.bodyAngle += time * turn
 	}
-	tank.location.X += elapsedTime * speed * math.Cos(tank.bodyAngle*math.Pi/180)
-	tank.location.Y += elapsedTime * speed * math.Sin(tank.bodyAngle*math.Pi/180)
 }
 
 /*
@@ -90,6 +136,14 @@ func (tank *Tank) OnTimePasses(elapsedTime float64) {
 */
 func (tank *Tank) Location() Vector2D {
 	return tank.location
+}
+
+func (tank *Tank) BodyAngle() float64 {
+	return tank.bodyAngle
+}
+
+func (tank *Tank) TurretAngle() float64 {
+	return tank.turretAngle
 }
 
 /*
