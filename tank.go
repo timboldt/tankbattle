@@ -79,61 +79,89 @@ func (tank *Tank) StopTurning() {
 	tank.bodyTurning = NotTurning
 }
 
+func (tank *Tank) StartTurningTurretLeft() {
+	tank.turretTurning = TurningLeft
+}
+
+func (tank *Tank) StartTurningTurretRight() {
+	tank.turretTurning = TurningRight
+}
+
+func (tank *Tank) StopTurretTurning() {
+	tank.turretTurning = NotTurning
+}
+
+func (tank *Tank) Speed() float64 {
+	var speed float64
+
+	switch tank.motion {
+	case NotMoving:
+		speed = 0
+	case MovingBackward:
+		if tank.bodyTurning == NotTurning {
+			speed = -SpeedMax
+		} else {
+			speed = -SpeedWhileRotating
+		}
+	case MovingForward:
+		if tank.bodyTurning == NotTurning {
+			speed = SpeedMax
+		} else {
+			speed = SpeedWhileRotating
+		}
+	}
+	return speed
+}
+
+func (tank *Tank) BodyTurnRate() float64 {
+	var turn float64
+
+	switch tank.bodyTurning {
+	case NotTurning:
+		turn = 0
+	case TurningLeft:
+		if tank.motion == NotMoving {
+			turn = -BodyRotationRateMax
+		} else {
+			turn = -BodyRotationRateWhileDriving
+		}
+	case TurningRight:
+		if tank.motion == NotMoving {
+			turn = BodyRotationRateMax
+		} else {
+			turn = BodyRotationRateWhileDriving
+		}
+	}
+	return turn
+}
+
+func (tank *Tank) TurretTurnRate() float64 {
+	var turretTurn float64
+
+	switch tank.turretTurning {
+	case NotTurning:
+		turretTurn = 0
+	case TurningLeft:
+		turretTurn = -TurretRotationRateMax
+	case TurningRight:
+		turretTurn = TurretRotationRateMax
+	}
+	return turretTurn
+}
+
 func (tank *Tank) OnTimePasses(elapsedTime float64) {
 	for elapsedTime > 0.0 {
-		time := math.Min(0.1, elapsedTime)
+		time := math.Min(0.01, elapsedTime)
 		elapsedTime -= time
 
-		var speed float64
-		switch tank.motion {
-		case NotMoving:
-			speed = 0
-		case MovingBackward:
-			if tank.bodyTurning == NotTurning {
-				speed = -SpeedMax
-			} else {
-				speed = -SpeedWhileRotating
-			}
-		case MovingForward:
-			if tank.bodyTurning == NotTurning {
-				speed = SpeedMax
-			} else {
-				speed = SpeedWhileRotating
-			}
-		}
-		tank.location.X += time * speed * math.Cos(tank.bodyAngle*math.Pi/180)
-		tank.location.Y += time * speed * math.Sin(tank.bodyAngle*math.Pi/180)
+		tank.location.X += time * tank.Speed() * math.Cos(tank.bodyAngle*math.Pi/180)
+		tank.location.Y += time * tank.Speed() * math.Sin(tank.bodyAngle*math.Pi/180)
 
-		var turn float64
-		switch tank.bodyTurning {
-		case NotTurning:
-			turn = 0
-		case TurningLeft:
-			if tank.motion == NotMoving {
-				turn = -BodyRotationRateMax
-			} else {
-				turn = -BodyRotationRateWhileDriving
-			}
-		case TurningRight:
-			if tank.motion == NotMoving {
-				turn = BodyRotationRateMax
-			} else {
-				turn = BodyRotationRateWhileDriving
-			}
-		}
-		tank.bodyAngle += time * turn
+		tank.bodyAngle += time * tank.BodyTurnRate()
+		tank.turretAngle += time * tank.TurretTurnRate()
 	}
 }
 
-/*
-  void startRotatingLeft();
-  void startRotatingRight();
-  void stopRotating();
-
-  void startRotatingTurretLeft();
-  void startRotatingTurretRight();
-  void stopRotatingTurret();
-*/
 func (tank *Tank) Location() Vector2D {
 	return tank.location
 }
@@ -145,34 +173,3 @@ func (tank *Tank) BodyAngle() float64 {
 func (tank *Tank) TurretAngle() float64 {
 	return tank.turretAngle
 }
-
-/*
-  sf::Vector2<float> location() const { return bodyTransform_.getPosition(); }
-  float bodyRotation() const { return bodyTransform_.getRotation(); }
-  float turretRotation() const { return turretTransform_.getRotation(); }
-
-  float speed() const;
-  float bodyRotationRate();
-  float turretRotationRate();
-
-  void onTimePasses(float elapsedTime);
-  void onDraw();
-
- private:
-  MotionDirection motion_direction_;
-  RotationDirection body_rotation_direction_;
-  RotationDirection turret_rotation_direction_;
-
-  sf::Transformable bodyTransform_;
-  sf::Transformable turretTransform_;
-};
-
-::std::ostream& operator<<(::std::ostream& os, const Tank& t);
-
-} // namespace tankbattle
-
-namespace sf {
-::std::ostream& operator<<(::std::ostream& os, const Vector2<float>& v);
-} // namespace "sf" 
-#endif
-*/

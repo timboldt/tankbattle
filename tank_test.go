@@ -93,31 +93,3 @@ func TestDriveInACircle(t *testing.T) {
 	checkLocation(t, "After travelling 360 degrees", tank.Location(), Vector2D{1.0, 0.0})
 }
 
-/*
-
-TEST(DrivingTest, SquarePattern) { 
-  Tank t(0.0, 0.0, kEast, 0.0);
-
-  for (int i = 0; i < 4; ++i) {
-    t.startDrivingForwards();
-    t.onTimePasses(1.0);
-
-    t.stopDriving();
-    t.onTimePasses(1.0);
-    EXPECT_NEAR(1.0, std::max(fabs(t.location().x), fabs(t.location().y)), 0.1);
-
-    t.startRotatingRight();
-    const float kBodyRotationPerTimeUnit = 90.0; //TODO
-    t.onTimePasses(90.0 / kBodyRotationPerTimeUnit);
-    t.stopRotating();
-    EXPECT_NEAR(90.0 * i, t.bodyRotation(), 0.1);
-  }
-  EXPECT_PRED2(IsNearLocation, t, Vector(0.0, 0.0));
-}
-
-} // Namespace
-
-int main(int argc, char **argv) {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}*/
