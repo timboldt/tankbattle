@@ -1,4 +1,4 @@
-package tankbattle
+package main
 
 import (
 	"fmt"
